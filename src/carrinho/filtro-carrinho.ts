@@ -6,13 +6,15 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 🔹 Conexão com o MongoDB
 const client = new MongoClient("mongodb://localhost:27017");
 await client.connect();
+
 const db = client.db("loja");
 const carrinho = db.collection("carrinho");
 
-// 🔹 Rota GET com filtro
+// =======================
+// GET com filtros
+// =======================
 app.get("/carrinho", async (req: Request, res: Response): Promise<void> => {
   const { nome, precoMin, precoMax } = req.query as {
     nome?: string;
@@ -20,16 +22,19 @@ app.get("/carrinho", async (req: Request, res: Response): Promise<void> => {
     precoMax?: string;
   };
 
-  const filtro: any = {};
+  const filtro: Record<string, any> = {};
 
+  // Filtro por nome (regex)
   if (nome) {
-    filtro.nome = { $regex: new RegExp(nome, "i") }; // busca parcial sem case sensitive
+    filtro.nome = { $regex: new RegExp(nome, "i") };
   }
 
+  // Filtro por preço mínimo/máximo
   if (precoMin || precoMax) {
     filtro.preco = {};
-    if (precoMin) filtro.preco.$gte = parseFloat(precoMin);
-    if (precoMax) filtro.preco.$lte = parseFloat(precoMax);
+
+    if (precoMin) filtro.preco["$gte"] = parseFloat(precoMin);
+    if (precoMax) filtro.preco["$lte"] = parseFloat(precoMax);
   }
 
   try {
@@ -41,7 +46,9 @@ app.get("/carrinho", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// 🔹 Rota POST para adicionar item
+// =======================
+// POST adicionar item
+// =======================
 app.post("/carrinho", async (req: Request, res: Response): Promise<void> => {
   const { nome, preco, quantidade } = req.body;
 
@@ -56,6 +63,7 @@ app.post("/carrinho", async (req: Request, res: Response): Promise<void> => {
       preco: parseFloat(preco),
       quantidade: parseInt(quantidade),
     });
+
     res.json({ _id: result.insertedId, nome, preco, quantidade });
   } catch (err) {
     console.error("Erro ao adicionar item:", err);
@@ -63,7 +71,7 @@ app.post("/carrinho", async (req: Request, res: Response): Promise<void> => {
   }
 });
 
-// 🔹 Inicia o servidor
+
 app.listen(8000, () => {
   console.log("Servidor rodando em http://localhost:8000");
 });

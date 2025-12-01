@@ -9,7 +9,7 @@ interface AutenticacaoRequest extends Request {
 
 interface JwtPayload {
     usuarioId: string;
-    tipo: string; // Esperamos que o 'tipo' esteja presente
+    tipo: string; 
 }
 
 function Auth(req: AutenticacaoRequest, res: Response, next: NextFunction) {
@@ -37,7 +37,7 @@ function Auth(req: AutenticacaoRequest, res: Response, next: NextFunction) {
             return res.status(401).json({ mensagem: "Middleware erro token" })
         }
 
-        // Verificação e atribuição
+        
         if (typeof decoded === "string" || !decoded || !("usuarioId" in decoded) || !("tipo" in decoded)) {
             return res.status(401).json({ mensagem: "Middleware erro decoded: campos 'usuarioId' ou 'tipo' ausentes." })
         }
@@ -51,4 +51,4 @@ function Auth(req: AutenticacaoRequest, res: Response, next: NextFunction) {
 }
 
 export default  Auth;
-export type { AutenticacaoRequest }; // Exporta ambos, Auth e AutenticacaoRequest
+export type { AutenticacaoRequest }; 
