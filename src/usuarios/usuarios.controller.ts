@@ -47,10 +47,10 @@ class UsuariosController {
         if (!senhaValida)
             return res.status(401).json({ mensagem: "Senha incorreta!" });
 
-        // Verifica se o campo tipo existe no banco (admin ou comum)
+       
         const tipo = usuario.tipo || 'comum';
 
-        // Gerar o token com tipo incluído
+      
         const token = jwt.sign(
             {
                 usuarioId: usuario._id,

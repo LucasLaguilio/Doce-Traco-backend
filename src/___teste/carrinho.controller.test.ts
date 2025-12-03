@@ -1,6 +1,6 @@
 import { ObjectId } from 'bson'
 
-// Mock do db do Mongo
+
 const mockProdutosFind = jest.fn()
 const mockProdutosFindOne = jest.fn()
 const mockCarrinhosFindOne = jest.fn()
@@ -8,6 +8,7 @@ const mockCarrinhosInsertOne = jest.fn()
 const mockCarrinhosUpdateOne = jest.fn()
 const mockCarrinhosFind = jest.fn()
 const mockCarrinhosDeleteOne = jest.fn()
+
 
 interface ItemCarrinho {
     produtoId: string;
@@ -22,6 +23,7 @@ interface Carrinho {
     dataAtualizacao: Date;
     total: number;
 }
+
 
 jest.mock('../database/banco-mongo.js', () => ({
   db: {
@@ -73,7 +75,7 @@ describe('CarrinhoController.adicionarItem', () => {
   test("Deve buscar o produto no banco de dados e retornar erro se não existir", async () => {
     const req: any = { body: { usuarioId: 'u1', produtoId: '123456789012123456789012', quantidade: 1 } }
     const res = createMockRes()
-    mockProdutosFind.mockResolvedValue([]) // Produto não existe
+    mockProdutosFind.mockResolvedValue([]) 
     await controller.adicionarItem(req, res)
     expect(mockProdutosFind).toHaveBeenCalledWith({ _id: ObjectId.createFromHexString('123456789012123456789012') })
     expect(res.status).toHaveBeenCalledWith(404)

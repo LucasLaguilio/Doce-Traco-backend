@@ -44,7 +44,7 @@ class ProdutoController {
     }
   }
 
-  // 🗑️ NOVO MÉTODO: excluir produto (apenas ADMIN)
+
   async excluir(req: Request, res: Response) {
     try {
       const { id } = req.params

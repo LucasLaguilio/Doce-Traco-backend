@@ -25,6 +25,10 @@ rotas.get("/admin/carrinhos", Auth, AuthAdmin, carrinhoController.listarTodosCar
 rotas.post("/removerItem", carrinhoController.removerItem)
 rotas.get("/carrinho/:usuarioId", carrinhoController.listar)
 rotas.delete("/carrinho/:usuarioId", carrinhoController.remover)
+rotas.get("/carrinho", Auth, carrinhoController.listar);
+
+
+rotas.delete("/produtos/excluir/:id", Auth, AuthAdmin, produtosController.excluir)
 
 rotas.get("/usuarios", Auth, AuthAdmin, usuariosController.listar)
 rotas.post("/logout", Auth, usuariosController.logout) 
