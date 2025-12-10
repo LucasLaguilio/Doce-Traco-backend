@@ -22,7 +22,7 @@ rotas.delete("/carrinho/:usuarioId", carrinhoController.remover);
 rotas.post('/criar-pagamento-cartao', Auth, carrinhoController.criarPagamento);
 
 
-rotas.delete("/produtos/excluir/:id", Auth, AuthAdmin, produtosController.excluir)
+// rota de exclusão de produto já registrada acima como DELETE /produtos/:id
 
 rotas.get("/usuarios", Auth, AuthAdmin, usuariosController.listar)
 rotas.post("/logout", Auth, usuariosController.logout) 
