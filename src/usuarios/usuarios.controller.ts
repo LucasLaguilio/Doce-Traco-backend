@@ -27,8 +27,24 @@ class UsuariosController {
     }
 
     async listar(req: Request, res: Response) {
+        const includeCarts = String(req.query.includeCarts || '').toLowerCase() === 'true';
         const usuarios = await db.collection('usuarios').find().toArray();
-        res.status(200).json(usuarios);
+
+        if (!includeCarts) {
+            return res.status(200).json(usuarios);
+        }
+
+        // Para cada usuário, buscar o carrinho associado (se existir)
+        const usuariosComCarrinho = await Promise.all(usuarios.map(async (u: any) => {
+            const usuarioIdStr = u._id?.toString()
+            const carrinho = await db.collection('Carrinho').findOne({ usuarioId: usuarioIdStr })
+            return {
+                ...u,
+                carrinho: carrinho || { usuarioId: usuarioIdStr, itens: [], total: 0 }
+            }
+        }))
+
+        res.status(200).json(usuariosComCarrinho);
     }
 
     async login(req: Request, res: Response) {
