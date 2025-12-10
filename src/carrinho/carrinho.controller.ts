@@ -1,12 +1,8 @@
-// CarrinhoController.ts
-
 import { Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import { db } from "../database/banco-mongo.js";
 import Stripe from "stripe";
 
-// Importando a interface de autenticação (assumindo que está em Auth.ts)
-// Nota: Seu projeto deve garantir que esta interface inclua o 'usuarioId'
 interface AutenticacaoRequest extends Request {
     usuarioId?: string;
 }
@@ -87,14 +83,14 @@ class CarrinhoController {
             return res.status(201).json(novoCarrinho);
         }
         
-        // Atualizar carrinho existente
+      
         const itemExistente = carrinho.itens.find(item => item.produtoId === produtoId);
         
         if (itemExistente) {
-            // Incrementar quantidade do item existente
+           
             itemExistente.quantidade += quantidade;
         } else {
-            // Adicionar novo item ao carrinho
+            
             carrinho.itens.push({
                 produtoId: produtoId,
                 quantidade: quantidade,
@@ -105,7 +101,7 @@ class CarrinhoController {
             });
         }
         
-        // Recalcular total
+      
         carrinho.total = carrinho.itens.reduce((acc, item) => 
             acc + (item.precoUnitario * item.quantidade), 0
         );
@@ -169,7 +165,7 @@ class CarrinhoController {
         return res.status(200).json(carrinho);
     }
 
-    // Sheron: Função para remover uma unidade de um item do carrinho
+
         async removerunidadeItem(req: AutenticacaoRequest, res: Response) {
             const { produtoId } = req.body;
             const usuarioId = req.usuarioId;
@@ -191,27 +187,27 @@ class CarrinhoController {
     
             const item = carrinho.itens[itemIndex];
             if (!item) {
-                // defensive check to satisfy TypeScript's strict null checks
+               
                 return res.status(404).json({ message: "Item não encontrado no carrinho" });
             }
             
             if (item.quantidade > 1) {
-                // Decrementa a unidade
+                
                 item.quantidade -= 1;
             } else if (item.quantidade === 1) {
-                // Se for 1, remove o item da lista
+               
                 carrinho.itens.splice(itemIndex, 1);
             } else {
                 return res.status(400).json({ message: "Quantidade inválida para remoção" });
             }
     
-            // Recalcular total e data
+            
             carrinho.total = carrinho.itens.reduce((acc, currentItem) => 
                 acc + (currentItem.precoUnitario * currentItem.quantidade), 0
             );
             carrinho.dataAtualizacao = new Date();
     
-            // Salvar no Banco de Dados
+            
             await db.collection("Carrinho").updateOne(
                 { usuarioId: usuarioId },
                 { 
@@ -275,7 +271,7 @@ class CarrinhoController {
     
     
     async listar(req: AutenticacaoRequest, res: Response) {
-        const usuarioId = req.usuarioId;
+        const usuarioId = req.usuarioId;    
 
         if (!usuarioId) {
             return res.status(401).json({ message: "Usuário não autenticado" });
@@ -292,7 +288,7 @@ class CarrinhoController {
                 total: 0 
             });
         }
-        
+             
 
         // Otimização: Apenas atualiza dados de exibição se estiverem faltando (mas não salva no DB)
         for (const item of carrinho.itens) {
@@ -311,6 +307,47 @@ class CarrinhoController {
         return res.status(200).json(carrinho);
     }
     
+    
+async listarTodosCarrinhosAdmin(req: Request, res: Response) {
+        try {
+            // A pipeline de agregação une a coleção 'Carrinho' com a coleção 'usuarios'.
+            const carrinhosComUsuarios = await db.collection("Carrinho").aggregate([
+                {
+                    $lookup: {
+                        from: "usuarios",        // Nome da coleção a juntar
+                        localField: "usuarioId", // Campo no CarrinhoController (string)
+                        foreignField: "_id",     // Campo correspondente no UsuariosController (ObjectId)
+                        as: "dadosUsuario"       // Nome do array onde os dados unidos serão colocados
+                    }
+                },
+                {
+                    // Desestrutura o array de dadosUsuario (espera-se que seja um único usuário)
+                    $unwind: {
+                        path: "$dadosUsuario",
+                        preserveNullAndEmptyArrays: true // Mantém carrinhos sem usuário correspondente (se houver)
+                    }
+                },
+                {
+                    // Projeta (formata) o resultado final
+                    $project: {
+                        _id: 1,
+                        usuarioId: 1,
+                        itens: 1,
+                        dataAtualizacao: 1,
+                        total: 1,
+                        // Extrai nome e email do usuário unido
+                        usuarioNome: { $ifNull: ["$dadosUsuario.nome", "Usuário Deletado"] },
+                        usuarioEmail: { $ifNull: ["$dadosUsuario.email", "N/A"] },
+                    }
+                }
+            ]).toArray();
+
+            return res.status(200).json(carrinhosComUsuarios);
+        } catch (error) {
+            console.error("Erro ao listar todos os carrinhos (Admin):", error);
+            return res.status(500).json({ message: "Erro interno do servidor." });
+        }
+    }
 
     async remover(req: AutenticacaoRequest, res: Response) {
         const usuarioId = req.usuarioId;
