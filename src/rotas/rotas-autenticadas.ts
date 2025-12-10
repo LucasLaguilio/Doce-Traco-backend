@@ -16,11 +16,10 @@ rotas.post('/adicionarItem', Auth, carrinhoController.adicionarItem)
 rotas.post('/removerunidadeItem', Auth, carrinhoController.removerunidadeItem)
 rotas.get('/carrinho', Auth, carrinhoController.listar)
 rotas.delete('/carrinho', Auth, carrinhoController.remover)
-
-
 rotas.post("/removerItem", carrinhoController.removerItem);
 rotas.get("/carrinho/:usuarioId", carrinhoController.listar);
 rotas.delete("/carrinho/:usuarioId", carrinhoController.remover);
+rotas.post('/criar-pagamento-cartao', Auth, carrinhoController.criarPagamento);
 
 
 rotas.delete("/produtos/excluir/:id", Auth, AuthAdmin, produtosController.excluir)
