@@ -9,7 +9,7 @@ interface AutenticacaoRequest extends Request {
 
 interface JwtPayload {
     usuarioId: string;
-    tipo: string; // Esperamos que o 'tipo' esteja presente
+    tipo: string; 
 }
 
 function Auth(req: AutenticacaoRequest, res: Response, next: NextFunction) {

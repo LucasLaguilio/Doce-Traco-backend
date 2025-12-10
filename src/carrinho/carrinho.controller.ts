@@ -3,12 +3,21 @@
 import { Request, Response } from "express";
 import { ObjectId } from "mongodb";
 import { db } from "../database/banco-mongo.js";
+import Stripe from "stripe";
 
 // Importando a interface de autenticação (assumindo que está em Auth.ts)
 // Nota: Seu projeto deve garantir que esta interface inclua o 'usuarioId'
 interface AutenticacaoRequest extends Request {
     usuarioId?: string;
 }
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
+    apiVersion: "2025-11-17.clover",
+});
+
+// DEBUG: verificar se a chave secreta do Stripe foi carregada corretamente (não logamos a chave inteira)
+console.log('DEBUG: STRIPE_SECRET_KEY present =', !!process.env.STRIPE_SECRET_KEY)
+console.log('DEBUG: STRIPE_SECRET_KEY startsWith sk_ =', process.env.STRIPE_SECRET_KEY?.startsWith('sk_'))
 
 interface ItemCarrinho {
     produtoId: string;
@@ -317,6 +326,46 @@ class CarrinhoController {
         }
         
         return res.status(200).json({ message: "Carrinho removido com sucesso" });
+    }
+    async criarPagamento(req: AutenticacaoRequest, res: Response) {
+        try {
+            const usuarioId = req.usuarioId;
+
+            if (!usuarioId) {
+                return res.status(401).json({ mensagem: "Usuário não autenticado" });
+            }
+
+            // Buscar o carrinho do usuário no banco de dados
+            const carrinho = await db.collection<Carrinho>("Carrinho").findOne({ usuarioId });
+
+            if (!carrinho || !Array.isArray(carrinho.itens) || carrinho.itens.length === 0) {
+                return res.status(400).json({ mensagem: "Carrinho vazio ou não encontrado" });
+            }
+
+            // Converter total para centavos (Stripe usa a menor unidade)
+            const amountInCents = Math.round((carrinho.total || 0) * 100);
+
+            if (amountInCents <= 0) {
+                return res.status(400).json({ mensagem: "Valor do carrinho inválido" });
+            }
+
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amountInCents,
+                currency: "brl",
+                payment_method_types: ["card"],
+                metadata: {
+                    usuarioId: usuarioId,
+                    pedido_id: carrinho._id?.toString() || "unknown",
+                },
+            });
+
+            return res.json({ clientSecret: paymentIntent.client_secret });
+        } catch (err) {
+            if (err instanceof Error) {
+                return res.status(400).json({ mensagem: err.message });
+            }
+            return res.status(400).json({ mensagem: "Erro de pagamento desconhecido!" });
+        }
     }
 }
 
