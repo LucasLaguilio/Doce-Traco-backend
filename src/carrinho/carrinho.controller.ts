@@ -7,13 +7,18 @@ interface AutenticacaoRequest extends Request {
     usuarioId?: string;
 }
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "", {
-    apiVersion: "2025-11-17.clover",
-});
-
-// DEBUG: verificar se a chave secreta do Stripe foi carregada corretamente (não logamos a chave inteira)
-console.log('DEBUG: STRIPE_SECRET_KEY present =', !!process.env.STRIPE_SECRET_KEY)
-console.log('DEBUG: STRIPE_SECRET_KEY startsWith sk_ =', process.env.STRIPE_SECRET_KEY?.startsWith('sk_'))
+// Instancia o Stripe somente se a chave estiver configurada.
+let stripe: Stripe | null = null;
+if (process.env.STRIPE_SECRET_KEY) {
+    try {
+        stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2025-11-17.clover" });
+    } catch (e) {
+        console.error('Erro ao inicializar Stripe:', e);
+        stripe = null;
+    }
+} else {
+    console.warn('STRIPE_SECRET_KEY não configurada; endpoints de pagamento estarão desabilitados.');
+}
 
 interface ItemCarrinho {
     produtoId: string;
@@ -384,6 +389,10 @@ async listarTodosCarrinhosAdmin(req: Request, res: Response) {
 
             if (amountInCents <= 0) {
                 return res.status(400).json({ mensagem: "Valor do carrinho inválido" });
+            }
+
+            if (!stripe) {
+                return res.status(500).json({ mensagem: 'Stripe não configurado no servidor. Defina a variável de ambiente STRIPE_SECRET_KEY.' });
             }
 
             const paymentIntent = await stripe.paymentIntents.create({
